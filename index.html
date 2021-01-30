@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Text Generator</title>
+
+    <style type="text/css">
+      body {
+        margin: 20px;
+        font-family: Source Sans Pro, sans-serif;
+      }
+
+      h1 {
+        text-align: center;
+      }
+
+      .main {
+        display: flex;
+        flex-direction: row;
+      }
+      .main > *:first-child {
+        width: 350px;
+      }
+
+      .templates {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .templates > *:first-child {
+        flex: 1;
+      }
+
+      .output-container {
+        width: 100%;
+        text-align: right;
+      }
+
+      #output {
+        width: 100%;
+        box-sizing: border-box;
+        height: 500px;
+        font-family: Source Sans Pro, sans-serif;
+        padding: 10px;
+        border-color: grey;
+        line-height: 20px;
+      }
+
+      .replace {
+        margin-top: 30px;
+      }
+
+      .checkbox-container {
+        display: flex;
+        margin-bottom: 7px;
+      }
+
+      .replace-entry,
+      .button-row {
+        margin-top: 10px;
+      }
+
+      .replace-entry > * {
+        margin-right: 10px;
+      }
+
+      .button-row {
+        display: flex;
+        justify-content: space-between;
+      }
+    </style>
+
+    <script type="text/javascript">
+      const STORAGE = {
+        templates: "templates",
+        replacements: "replacements",
+      };
+
+      const saveToStorage = (name, data) => {
+        localStorage.setItem(name, JSON.stringify(data));
+      };
+
+      const loadFromStorage = (name) => {
+        const text = localStorage.getItem(name);
+        if (text) {
+          return JSON.parse(text);
+        }
+      };
+
+      const renderCheckbox = (template, index) => {
+        const checkbox = document.createElement("input");
+        checkbox.className = "template-checkbox";
+        checkbox.id = index;
+        checkbox.type = "checkbox";
+
+        const label = document.createElement("label");
+        label.htmlFor = index;
+        label.innerHTML = template.label;
+
+        const div = document.createElement("div");
+        div.className = "checkbox-container";
+        div.appendChild(checkbox);
+        div.appendChild(label);
+        return div;
+      };
+
+      const renderTemplates = () => {
+        const templates = loadFromStorage(STORAGE.templates);
+        if (!templates) {
+          return;
+        }
+        const templateListEl = document.getElementById("template-list");
+        templateListEl.innerHTML = "";
+        templates.forEach((template, i) => {
+          const checkboxDiv = renderCheckbox(template, i);
+          checkboxDiv.addEventListener("click", renderContent);
+          templateListEl.appendChild(checkboxDiv);
+        });
+      };
+
+      const renderContent = () => {
+        const templates = loadFromStorage(STORAGE.templates);
+        if (!templates) {
+          return;
+        }
+
+        const replacements = getReplacements();
+        const outputEl = document.getElementById("output");
+        outputEl.value = Array.from(
+          document.querySelectorAll(".template-checkbox:checked")
+        )
+          .map((el) => {
+            let content = templates[el.id].content;
+            replacements
+              .filter((repl) => repl.isActive)
+              .forEach((repl) => {
+                content = content.replace(
+                  new RegExp("\\b" + repl.searchTerm + "\\b", "g"),
+                  repl.replaceWith
+                );
+              });
+            return content;
+          })
+          .join("\n\n");
+      };
+
+      const importTemplates = () => {
+        const csv = prompt(
+          "Paste template definitions from Excel.\nIMPORTANT: The current templates will be replaced."
+        );
+        if (!csv) {
+          return;
+        }
+
+        const data = csv
+          .split("\n")
+          .map((row) => row.split("\t"))
+          .map(([label, content]) => ({ label, content }));
+        saveToStorage(STORAGE.templates, data);
+        renderTemplates();
+      };
+
+      const importReplacements = () => {
+        const text = prompt(
+          "Paste exported replacement.\nIMPORTANT: The current replacements will be replaced."
+        );
+        if (!text) {
+          return;
+        }
+
+        let replacements;
+        try {
+          replacements = JSON.parse(text);
+          if (!replacements || !(length in replacements)) {
+            throw new Error("no array");
+          }
+        } catch (e) {
+          alert("Import failed");
+        }
+
+        saveToStorage(STORAGE.replacements, replacements);
+        renderReplacementsFromStorage();
+        alert("Import successful");
+      };
+
+      const replacementsHaveChanged = () => {
+        const replacements = getReplacements();
+        saveToStorage(STORAGE.replacements, replacements);
+        renderContent();
+      };
+
+      const addReplacement = (repl) => {
+        const { isActive, searchTerm, replaceWith } = repl || {};
+        const replaceListEl = document.getElementById("replace-list");
+
+        const container = document.createElement("div");
+        container.className = "replace-entry";
+
+        const checkboxEl = document.createElement("input");
+        checkboxEl.type = "checkbox";
+        checkboxEl.className = "replace-isactive";
+        checkboxEl.addEventListener("click", replacementsHaveChanged);
+        checkboxEl.checked = isActive === false ? "" : "checked";
+
+        const searchTermEl = document.createElement("input");
+        searchTermEl.className = "replace-search-term";
+        searchTermEl.addEventListener("input", replacementsHaveChanged);
+        searchTermEl.value = searchTerm || "";
+
+        const repacleWithEl = document.createElement("input");
+        repacleWithEl.className = "replace-replace-with";
+        repacleWithEl.addEventListener("input", replacementsHaveChanged);
+        repacleWithEl.value = replaceWith || "";
+
+        const deleteButtonEl = document.createElement("button");
+        deleteButtonEl.innerHTML = "🗑";
+        deleteButtonEl.addEventListener("click", () => {
+          replaceListEl.removeChild(container);
+          replacementsHaveChanged();
+        });
+
+        container.appendChild(checkboxEl);
+        container.appendChild(searchTermEl);
+        container.appendChild(repacleWithEl);
+        container.appendChild(deleteButtonEl);
+
+        replaceListEl.appendChild(container);
+      };
+
+      const getReplacements = () => {
+        return Array.from(document.querySelectorAll(".replace-entry")).map(
+          (containerEl) => ({
+            isActive: containerEl.querySelector(".replace-isactive").checked,
+            searchTerm: containerEl.querySelector(".replace-search-term").value,
+            replaceWith: containerEl.querySelector(".replace-replace-with")
+              .value,
+          })
+        );
+      };
+
+      const copyToClipboard = (text, message) => {
+        navigator.clipboard
+          .writeText(text)
+          .then(() => alert(message || "Copied to clipboard."))
+          .catch((e) => {
+            console.error(e);
+            alert("Could not be copied to clipboard");
+          });
+      };
+
+      const renderReplacementsFromStorage = () => {
+        const replacements = loadFromStorage(STORAGE.replacements);
+        if (replacements.length) {
+          document.getElementById("replace-list").innerHTML = "";
+          replacements.forEach(addReplacement);
+        }
+      };
+
+      const init = () => {
+        document
+          .getElementById("import")
+          .addEventListener("click", importTemplates);
+
+        document
+          .getElementById("content-to-clipboard")
+          .addEventListener("click", () => copyToClipboard(renderContent()));
+
+        document
+          .getElementById("export-replacements")
+          .addEventListener("click", () =>
+            copyToClipboard(
+              JSON.stringify(getReplacements()),
+              "Replacmenet configuration copied to clipboard. Can be used as backup or to import on a different browser"
+            )
+          );
+
+        document
+          .getElementById("import-replacements")
+          .addEventListener("click", importReplacements);
+
+        document
+          .getElementById("add-repaclement")
+          .addEventListener("click", addReplacement);
+
+        renderTemplates();
+        renderReplacementsFromStorage();
+      };
+    </script>
+    <style type="text/css">
+      canvas {
+        border: 1px solid black;
+      }
+    </style>
+  </head>
+  <body onload="init();">
+    <h1>Textor</h1>
+    <div class="main">
+      <div class="templates">
+        <div id="template-list">
+          <p>
+            To start you need to import templates. To import templates create an
+            Excel-Sheet with 2 columns and as many rows as you want. Each row
+            will represent one template text. The first column will be used as a
+            label, and the second one has the actual content.
+          </p>
+          <p>
+            To import the sheet copy the cells with the templates with (Cmd +
+            C), press the "Import" button at the bottom and paste the content
+            into the message box. Note that you need to select
+            <em>exactly</em> the cells containing the templates.
+          </p>
+        </div>
+        <div>
+          <button id="import">Import from Excel</button>
+        </div>
+      </div>
+      <div class="output-container">
+        <textarea id="output" disabled></textarea>
+        <button id="content-to-clipboard">Copy to clipboard</button>
+      </div>
+    </div>
+    <div class="replace">
+      <h3>Replacements</h3>
+      <div id="replace-list">
+        You can automatically replace certain terms in the templates. Click the
+        "Add replacement" button to add a replacement
+      </div>
+      <div class="button-row">
+        <button id="add-repaclement">Add replacement</button>
+        <div>
+          <button id="export-replacements">
+            Copy replacements to clipboard
+          </button>
+          <button id="import-replacements">Import replacements</button>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
