@@ -250,7 +250,7 @@
 
       const renderReplacementsFromStorage = () => {
         const replacements = loadFromStorage(STORAGE.replacements);
-        if (replacements.length) {
+        if (replacements && replacements.length) {
           document.getElementById("replace-list").innerHTML = "";
           replacements.forEach(addReplacement);
         }
