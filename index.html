@@ -103,7 +103,7 @@
       const addClickListener = (query, callback) =>
         queryElement(query).addEventListener("click", callback);
 
-      const renderCheckbox = (template, index) => {
+      const renderTemplate = (template, index) => {
         const checkbox = document.createElement("input");
         checkbox.className = "template-checkbox";
         checkbox.id = index;
@@ -128,7 +128,7 @@
         const templateListEl = queryElement("#template-list");
         templateListEl.innerHTML = "";
         templates.forEach((template, i) => {
-          const checkboxDiv = renderCheckbox(template, i);
+          const checkboxDiv = renderTemplate(template, i);
           checkboxDiv.addEventListener("click", renderContent);
           templateListEl.appendChild(checkboxDiv);
         });
