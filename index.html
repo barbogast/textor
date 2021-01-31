@@ -100,6 +100,9 @@
       const queryElements = (query) =>
         Array.from(document.querySelectorAll(query));
 
+      const addClickListener = (query, callback) =>
+        queryElement(query).addEventListener("click", callback);
+
       const renderCheckbox = (template, index) => {
         const checkbox = document.createElement("input");
         checkbox.className = "template-checkbox";
@@ -265,28 +268,22 @@
       };
 
       const init = () => {
-        queryElement("#import").addEventListener("click", importTemplates);
+        addClickListener("#import", importTemplates);
 
-        queryElement("#content-to-clipboard").addEventListener("click", () =>
+        addClickListener("#content-to-clipboard", () =>
           copyToClipboard(renderContent())
         );
 
-        queryElement("#export-replacements").addEventListener("click", () =>
+        addClickListener("#export-replacements", () =>
           copyToClipboard(
             JSON.stringify(getReplacements()),
             "Replacmenet configuration copied to clipboard. Can be used as backup or to import on a different browser"
           )
         );
 
-        queryElement("#import-replacements").addEventListener(
-          "click",
-          importReplacements
-        );
+        addClickListener("#import-replacements", importReplacements);
 
-        queryElement("#add-repaclement").addEventListener(
-          "click",
-          addReplacement
-        );
+        addClickListener("#add-repaclement", addReplacement);
 
         renderTemplates();
         renderReplacementsFromStorage();
