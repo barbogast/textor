@@ -87,6 +87,19 @@
         }
       };
 
+      const queryElement = (query) => {
+        const elements = document.querySelectorAll(query);
+        if (elements.length !== 1) {
+          throw new Error(
+            `Found wrong number of elements for "${query}": "${elements.length}" instead of "1"`
+          );
+        }
+        return elements[0];
+      };
+
+      const queryElements = (query) =>
+        Array.from(document.querySelectorAll(query));
+
       const renderCheckbox = (template, index) => {
         const checkbox = document.createElement("input");
         checkbox.className = "template-checkbox";
@@ -109,7 +122,7 @@
         if (!templates) {
           return;
         }
-        const templateListEl = document.getElementById("template-list");
+        const templateListEl = queryElement("#template-list");
         templateListEl.innerHTML = "";
         templates.forEach((template, i) => {
           const checkboxDiv = renderCheckbox(template, i);
@@ -125,10 +138,8 @@
         }
 
         const replacements = getReplacements();
-        const outputEl = document.getElementById("output");
-        outputEl.value = Array.from(
-          document.querySelectorAll(".template-checkbox:checked")
-        )
+        const outputEl = queryElement("#output");
+        outputEl.value = queryElements(".template-checkbox:checked")
           .map((el) => {
             let content = templates[el.id].content;
             replacements
@@ -191,7 +202,7 @@
 
       const addReplacement = (repl) => {
         const { isActive, searchTerm, replaceWith } = repl || {};
-        const replaceListEl = document.getElementById("replace-list");
+        const replaceListEl = queryElement("#replace-list");
 
         const container = document.createElement("div");
         container.className = "replace-entry";
@@ -228,14 +239,11 @@
       };
 
       const getReplacements = () => {
-        return Array.from(document.querySelectorAll(".replace-entry")).map(
-          (containerEl) => ({
-            isActive: containerEl.querySelector(".replace-isactive").checked,
-            searchTerm: containerEl.querySelector(".replace-search-term").value,
-            replaceWith: containerEl.querySelector(".replace-replace-with")
-              .value,
-          })
-        );
+        return queryElements(".replace-entry").map((containerEl) => ({
+          isActive: queryElement(".replace-isactive").checked,
+          searchTerm: queryElement(".replace-search-term").value,
+          replaceWith: queryElement(".replace-replace-with").value,
+        }));
       };
 
       const copyToClipboard = (text, message) => {
@@ -251,36 +259,34 @@
       const renderReplacementsFromStorage = () => {
         const replacements = loadFromStorage(STORAGE.replacements);
         if (replacements && replacements.length) {
-          document.getElementById("replace-list").innerHTML = "";
+          queryElement("#replace-list").innerHTML = "";
           replacements.forEach(addReplacement);
         }
       };
 
       const init = () => {
-        document
-          .getElementById("import")
-          .addEventListener("click", importTemplates);
+        queryElement("#import").addEventListener("click", importTemplates);
 
-        document
-          .getElementById("content-to-clipboard")
-          .addEventListener("click", () => copyToClipboard(renderContent()));
+        queryElement("#content-to-clipboard").addEventListener("click", () =>
+          copyToClipboard(renderContent())
+        );
 
-        document
-          .getElementById("export-replacements")
-          .addEventListener("click", () =>
-            copyToClipboard(
-              JSON.stringify(getReplacements()),
-              "Replacmenet configuration copied to clipboard. Can be used as backup or to import on a different browser"
-            )
-          );
+        queryElement("#export-replacements").addEventListener("click", () =>
+          copyToClipboard(
+            JSON.stringify(getReplacements()),
+            "Replacmenet configuration copied to clipboard. Can be used as backup or to import on a different browser"
+          )
+        );
 
-        document
-          .getElementById("import-replacements")
-          .addEventListener("click", importReplacements);
+        queryElement("#import-replacements").addEventListener(
+          "click",
+          importReplacements
+        );
 
-        document
-          .getElementById("add-repaclement")
-          .addEventListener("click", addReplacement);
+        queryElement("#add-repaclement").addEventListener(
+          "click",
+          addReplacement
+        );
 
         renderTemplates();
         renderReplacementsFromStorage();
